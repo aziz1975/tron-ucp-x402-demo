@@ -1,0 +1,20 @@
+{
+  "name": "localhost.tron.trc20_usdt",
+  "version": "1.0.0",
+  "summary": "Custom UCP payment handler for settling checkout sessions by broadcasting a TRC20 USDT transfer on TRON Nile.",
+  "network": "TRON_NILE",
+  "asset": "TRC20_USDT",
+  "contract_address_env": "TRC20_USDT_CONTRACT",
+  "required_config": [
+    "receiver_address",
+    "amount",
+    "amount_decimal",
+    "contract_address",
+    "network",
+    "asset"
+  ],
+  "receipt": {
+    "type": "blockchain_receipt",
+    "field": "transaction_hash"
+  }
+}

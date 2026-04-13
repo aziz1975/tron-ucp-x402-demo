@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "localhost.tron.trc20_usdt payment handler config",
+  "type": "object",
+  "required": [
+    "receiver_address",
+    "amount",
+    "amount_decimal",
+    "contract_address",
+    "network",
+    "asset",
+    "transfer_state"
+  ],
+  "properties": {
+    "receiver_address": {
+      "type": "string"
+    },
+    "amount": {
+      "type": "string"
+    },
+    "amount_decimal": {
+      "type": "string"
+    },
+    "contract_address": {
+      "type": "string"
+    },
+    "network": {
+      "type": "string",
+      "const": "TRON_NILE"
+    },
+    "asset": {
+      "type": "string",
+      "const": "TRC20_USDT"
+    },
+    "transfer_state": {
+      "type": "string"
+    },
+    "checkout_session_id": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

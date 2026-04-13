@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UCP Manifest Explorer — What the Agent Sees</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #0a0b0f;
+      --surface: #12131a;
+      --surface-2: #1a1b25;
+      --border: #2a2b3a;
+      --text: #e4e4ef;
+      --text-dim: #8b8ba0;
+      --accent: #6c5ce7;
+      --accent-glow: rgba(108, 92, 231, 0.25);
+      --green: #00d4aa;
+      --green-glow: rgba(0, 212, 170, 0.15);
+      --amber: #f0a500;
+      --blue: #5b9cf4;
+      --red: #ff5c72;
+      --json-key: #f0a500;
+      --json-string: #00d4aa;
+      --json-bracket: #8b8ba0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Animated grid background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -20%, var(--accent-glow), transparent),
+        radial-gradient(ellipse 60% 40% at 80% 100%, var(--green-glow), transparent);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 100px;
+      background: var(--accent-glow);
+      border: 1px solid rgba(108, 92, 231, 0.3);
+      font-size: 12px;
+      font-weight: 600;
+      color: #a78bfa;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .badge .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(0,212,170,0.4); }
+      50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(0,212,170,0); }
+    }
+
+    .header h1 {
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, #fff 30%, #a78bfa 70%, var(--green));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .header p {
+      font-size: 16px;
+      color: var(--text-dim);
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* Endpoint bar */
+    .endpoint-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 20px;
+      margin-bottom: 32px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      overflow-x: auto;
+    }
+
+    .method-badge {
+      flex-shrink: 0;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .method-badge.get { background: rgba(0, 212, 170, 0.15); color: var(--green); }
+    .method-badge.post { background: rgba(91, 156, 244, 0.15); color: var(--blue); }
+
+    .endpoint-url {
+      color: var(--text-dim);
+      white-space: nowrap;
+    }
+    .endpoint-url .path { color: var(--text); font-weight: 500; }
+
+    .status-chip {
+      margin-left: auto;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+    }
+    .status-chip.live { background: var(--green-glow); color: var(--green); border: 1px solid rgba(0,212,170,0.2); }
+    .status-chip.error { background: rgba(255,92,114,0.1); color: var(--red); border: 1px solid rgba(255,92,114,0.2); }
+
+    /* Main content grid */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 40px;
+    }
+
+    @media (max-width: 768px) {
+      .content-grid { grid-template-columns: 1fr; }
+    }
+
+    /* Card base */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-dim);
+    }
+
+    .card-header .icon {
+      font-size: 16px;
+    }
+
+    .card-body {
+      padding: 20px;
+    }
+
+    /* JSON viewer */
+    .json-viewer {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13.5px;
+      line-height: 1.8;
+      white-space: pre;
+      overflow-x: auto;
+    }
+
+    .json-viewer .key { color: var(--json-key); }
+    .json-viewer .string { color: var(--json-string); }
+    .json-viewer .bracket { color: var(--json-bracket); }
+    .json-viewer .line {
+      display: block;
+      padding: 2px 0;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+    .json-viewer .line:hover {
+      background: rgba(108, 92, 231, 0.08);
+    }
+    .json-viewer .line.highlight {
+      background: rgba(108, 92, 231, 0.15);
+    }
+
+    /* Field annotations */
+    .field-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .field-item {
+      padding: 14px 16px;
+      background: var(--surface-2);
+      border-radius: 10px;
+      border: 1px solid transparent;
+      transition: border-color 0.2s, transform 0.2s;
+      cursor: default;
+    }
+    .field-item:hover {
+      border-color: var(--accent);
+      transform: translateX(4px);
+    }
+
+    .field-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--json-key);
+      margin-bottom: 4px;
+    }
+
+    .field-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--json-string);
+      margin-bottom: 8px;
+      word-break: break-all;
+    }
+
+    .field-desc {
+      font-size: 13px;
+      color: var(--text-dim);
+      line-height: 1.5;
+    }
+
+    /* Agent simulation */
+    .simulation-card {
+      grid-column: 1 / -1;
+    }
+
+    .sim-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .sim-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 16px 0;
+      position: relative;
+      opacity: 0.35;
+      transition: opacity 0.5s;
+    }
+    .sim-step.active { opacity: 1; }
+    .sim-step.completed { opacity: 0.6; }
+
+    .sim-step:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      left: 17px;
+      top: 48px;
+      bottom: 0;
+      width: 2px;
+      background: var(--border);
+    }
+    .sim-step.completed:not(:last-child)::after {
+      background: var(--green);
+    }
+
+    .step-icon {
+      flex-shrink: 0;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      background: var(--surface-2);
+      border: 2px solid var(--border);
+      color: var(--text-dim);
+      z-index: 1;
+      transition: all 0.3s;
+    }
+    .sim-step.active .step-icon {
+      border-color: var(--accent);
+      color: var(--accent);
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+    .sim-step.completed .step-icon {
+      border-color: var(--green);
+      background: rgba(0, 212, 170, 0.1);
+      color: var(--green);
+    }
+
+    .step-content h4 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .step-content p {
+      font-size: 13px;
+      color: var(--text-dim);
+      line-height: 1.5;
+    }
+    .step-content code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11.5px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: var(--surface-2);
+      color: var(--blue);
+    }
+
+    /* Simulate button */
+    .sim-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 20px;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), #7c5ce7);
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .sim-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 24px var(--accent-glow);
+    }
+    .sim-btn:active { transform: translateY(0); }
+    .sim-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* HTTP details */
+    .http-block {
+      margin-top: 32px;
+      grid-column: 1 / -1;
+    }
+
+    .http-section {
+      margin-bottom: 24px;
+    }
+
+    .http-section h3 {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+
+    .response-block {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 20px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12.5px;
+      line-height: 1.7;
+      overflow-x: auto;
+    }
+
+    .response-block .status-line {
+      color: var(--green);
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .response-block .header-line { color: var(--text-dim); }
+    .response-block .header-value { color: var(--blue); }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding-top: 32px;
+      border-top: 1px solid var(--border);
+      color: var(--text-dim);
+      font-size: 13px;
+    }
+    .footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .footer a:hover { text-decoration: underline; }
+
+    /* Loading skeleton */
+    .skeleton {
+      background: linear-gradient(90deg, var(--surface-2) 25%, var(--border) 50%, var(--surface-2) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 6px;
+      height: 18px;
+      margin-bottom: 8px;
+    }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="badge"><span class="dot"></span> Live from your gateway</div>
+      <h1>UCP Manifest Explorer</h1>
+      <p>This is exactly what an AI agent reads when it discovers your store. The manifest below is pulled live from your running gateway.</p>
+    </div>
+
+    <!-- Endpoint bar -->
+    <div class="endpoint-bar">
+      <span class="method-badge get">GET</span>
+      <span class="endpoint-url">
+        <span id="endpoint-host">http://localhost:3000</span><span class="path">/.well-known/ucp</span>
+      </span>
+      <span class="status-chip live" id="status-chip">
+        <span class="dot" style="width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s ease-in-out infinite;"></span>
+        Live
+      </span>
+    </div>
+
+    <!-- Main grid -->
+    <div class="content-grid">
+      <!-- Raw JSON -->
+      <div class="card">
+        <div class="card-header">
+          <span class="icon">{ }</span> Raw Manifest (JSON)
+        </div>
+        <div class="card-body">
+          <div class="json-viewer" id="json-viewer">
+            <div class="skeleton" style="width:80%"></div>
+            <div class="skeleton" style="width:65%"></div>
+            <div class="skeleton" style="width:90%"></div>
+            <div class="skeleton" style="width:50%"></div>
+            <div class="skeleton" style="width:75%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Field annotations -->
+      <div class="card">
+        <div class="card-header">
+          <span class="icon">📖</span> What Each Field Means
+        </div>
+        <div class="card-body">
+          <div class="field-list" id="field-list">
+            <div class="skeleton" style="width:100%;height:60px"></div>
+            <div class="skeleton" style="width:100%;height:60px"></div>
+            <div class="skeleton" style="width:100%;height:60px"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Agent simulation -->
+      <div class="card simulation-card">
+        <div class="card-header">
+          <span class="icon">🤖</span> Agent Discovery Flow — What Happens Step by Step
+        </div>
+        <div class="card-body">
+          <div class="sim-steps" id="sim-steps">
+            <div class="sim-step" data-step="0">
+              <div class="step-icon">1</div>
+              <div class="step-content">
+                <h4>Agent hits a paywall</h4>
+                <p>The agent calls <code>GET /api/premium-data</code> and receives <code>HTTP 402 Payment Required</code> with a <code>WWW-Authenticate</code> header pointing to the UCP manifest.</p>
+              </div>
+            </div>
+            <div class="sim-step" data-step="1">
+              <div class="step-icon">2</div>
+              <div class="step-content">
+                <h4>Agent reads the manifest</h4>
+                <p>The agent fetches <code>GET /.well-known/ucp</code> and reads the business profile, service endpoint, official checkout capability, and TRON payment handler metadata.</p>
+              </div>
+            </div>
+            <div class="sim-step" data-step="2">
+              <div class="step-icon">3</div>
+              <div class="step-content">
+                <h4>Agent creates a checkout session</h4>
+                <p>Using the business profile, the agent calls <code>POST /ucp/v1/checkout-sessions</code> with the requested line items. Your gateway freezes the order until you approve via Telegram.</p>
+              </div>
+            </div>
+            <div class="sim-step" data-step="3">
+              <div class="step-icon">4</div>
+              <div class="step-content">
+                <h4>You approve on Telegram</h4>
+                <p>A push notification arrives on your phone. Tap <strong>Approve</strong> and the gateway releases the payment challenge to the agent.</p>
+              </div>
+            </div>
+            <div class="sim-step" data-step="4">
+              <div class="step-icon">5</div>
+              <div class="step-content">
+                <h4>Agent pays on-chain</h4>
+                <p>The agent signs and broadcasts a TRC20 USDT transfer to your merchant address. Private keys never leave the agent's machine.</p>
+              </div>
+            </div>
+            <div class="sim-step" data-step="5">
+              <div class="step-icon">✓</div>
+              <div class="step-content">
+                <h4>Access granted</h4>
+                <p>Your gateway verifies the transaction on the TRON blockchain and grants the agent access to the premium resource.</p>
+              </div>
+            </div>
+          </div>
+          <button class="sim-btn" id="sim-btn" onclick="runSimulation()">
+            ▶ Simulate Agent Discovery
+          </button>
+        </div>
+      </div>
+
+      <!-- HTTP 402 detail -->
+      <div class="card http-block">
+        <div class="card-header">
+          <span class="icon">🔒</span> What the HTTP 402 Response Looks Like
+        </div>
+        <div class="card-body">
+          <div class="response-block">
+            <div class="status-line">HTTP/1.1 402 Payment Required</div>
+            <div class="header-line">WWW-Authenticate: <span class="header-value" id="www-auth">UCP url="/.well-known/ucp"</span></div>
+            <div class="header-line">Content-Type: <span class="header-value">application/json</span></div>
+            <br>
+            <div id="four-oh-two-body" style="color: var(--text-dim);">{
+  "error": "Payment Required",
+  "message": "Premium AI Endpoint. Complete UCP checkout.",
+  "cost": "15 USDT",
+  "currency": "TRX_USDT",
+  "ucp_manifest": "<span style="color:var(--json-string)" id="ucp-manifest-url">/.well-known/ucp</span>"
+}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p>
+        Powered by the <a href="https://ucp.dev" target="_blank">Universal Commerce Protocol</a> ·
+        <a href="https://github.com/Universal-Commerce-Protocol/ucp" target="_blank">Specification</a> ·
+        <a href="https://github.com/Universal-Commerce-Protocol/js-sdk" target="_blank">JS SDK</a>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    const FIELD_ANNOTATIONS = {
+      name: {
+        desc: 'Human-readable name of your merchant gateway. Agents use this for logging and display.',
+      },
+      description: {
+        desc: 'A brief summary of what this gateway offers. Informational only — agents don\'t parse this.',
+      },
+      capabilities: {
+        desc: 'Declares what UCP actions this server supports. The latest official checkout capability is "dev.ucp.shopping.checkout".',
+      },
+      payment_handler: {
+        desc: 'The token standard accepted. TRC20_USDT = USDT on the TRON network via the TRC-20 smart contract.',
+      },
+      receiver_address: {
+        desc: 'Your TRON wallet. This is where agents will send funds. It\'s your merchant address — you control the keys.',
+      },
+      network: {
+        desc: 'Which blockchain network to transact on. TRON_NILE = the TRON testnet. Swap for mainnet in production.',
+      },
+    };
+
+    async function fetchManifest() {
+      const base = window.location.origin;
+      document.getElementById('endpoint-host').textContent = base;
+
+      try {
+        const res = await fetch(base + '/.well-known/ucp');
+        if (!res.ok) throw new Error(res.statusText);
+        const data = await res.json();
+        renderJSON(data);
+        renderAnnotations(data);
+        document.getElementById('www-auth').textContent = `UCP url="${base}/.well-known/ucp"`;
+        document.getElementById('ucp-manifest-url').textContent = `${base}/.well-known/ucp`;
+      } catch (e) {
+        document.getElementById('json-viewer').innerHTML =
+          `<span style="color:var(--red)">⚠ Could not reach the gateway at ${base}/.well-known/ucp\n\nMake sure the server is running: node server.js</span>`;
+        const chip = document.getElementById('status-chip');
+        chip.className = 'status-chip error';
+        chip.innerHTML = '⚠ Offline';
+        document.getElementById('field-list').innerHTML =
+          '<p style="color:var(--text-dim);font-size:13px;">Start the gateway to see field annotations.</p>';
+      }
+    }
+
+    function renderJSON(data) {
+      const viewer = document.getElementById('json-viewer');
+      const lines = JSON.stringify(data, null, 2).split('\n');
+      viewer.innerHTML = lines.map((line, i) => {
+        const colored = line
+          .replace(/"([^"]+)":/g, '<span class="key">"$1"</span>:')
+          .replace(/: "([^"]+)"/g, ': <span class="string">"$1"</span>')
+          .replace(/: (\[.*\])/g, ': <span class="string">$1</span>')
+          .replace(/([{}[\]])/g, '<span class="bracket">$1</span>');
+        return `<span class="line" data-line="${i}">${colored}</span>`;
+      }).join('\n');
+    }
+
+    function renderAnnotations(data) {
+      const list = document.getElementById('field-list');
+      list.innerHTML = '';
+      for (const [key, value] of Object.entries(data)) {
+        const ann = FIELD_ANNOTATIONS[key] || { desc: '' };
+        const displayValue = typeof value === 'object' ? JSON.stringify(value) : Array.isArray(value) ? JSON.stringify(value) : String(value);
+        const el = document.createElement('div');
+        el.className = 'field-item';
+        el.innerHTML = `
+          <div class="field-name">"${key}"</div>
+          <div class="field-value">${displayValue}</div>
+          <div class="field-desc">${ann.desc}</div>
+        `;
+        list.appendChild(el);
+      }
+    }
+
+    // Simulation
+    let simRunning = false;
+    async function runSimulation() {
+      if (simRunning) return;
+      simRunning = true;
+      const btn = document.getElementById('sim-btn');
+      btn.disabled = true;
+      btn.textContent = '⏳ Simulating…';
+
+      const steps = document.querySelectorAll('.sim-step');
+      steps.forEach(s => { s.classList.remove('active', 'completed'); });
+
+      for (let i = 0; i < steps.length; i++) {
+        steps[i].classList.add('active');
+        steps[i].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        await new Promise(r => setTimeout(r, 1800));
+        steps[i].classList.remove('active');
+        steps[i].classList.add('completed');
+      }
+
+      btn.disabled = false;
+      btn.textContent = '▶ Replay Simulation';
+      simRunning = false;
+    }
+
+    fetchManifest();
+  </script>
+</body>
+</html>

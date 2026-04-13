@@ -1,0 +1,25 @@
+{
+  "name": "Local TRON UCP Demo Agent",
+  "description": "Mock platform profile used by the demo agent when exercising the merchant checkout flow locally.",
+  "ucp": {
+    "version": "2026-01-23",
+    "capabilities": {
+      "dev.ucp.shopping.checkout": [
+        {
+          "version": "2026-01-23",
+          "spec": "https://ucp.dev/latest/specification/checkout/",
+          "schema": "https://ucp.dev/2026-01-23/schemas/shopping/checkout.json"
+        }
+      ]
+    },
+    "payment_handlers": {
+      "localhost.tron.trc20_usdt": [
+        {
+          "version": "1.0.0",
+          "spec": "http://localhost:8000/public/tron-nile-trc20-usdt-handler.json",
+          "schema": "http://localhost:8000/public/tron-nile-trc20-usdt-handler.schema.json"
+        }
+      ]
+    }
+  }
+}
