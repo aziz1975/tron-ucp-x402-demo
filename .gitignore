@@ -24,6 +24,8 @@ coverage/
 .cache/
 .parcel-cache/
 .vite/
+__pycache__/
+*.pyc
 
 # Local data and temp files
 *.local
@@ -42,3 +44,4 @@ coverage/
 
 # Tooling
 .codex
+.nvmrc

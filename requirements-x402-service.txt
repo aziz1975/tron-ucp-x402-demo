@@ -1,0 +1,4 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+bankofai-x402[tron,fastapi] @ git+https://github.com/BofAI/x402.git@main#subdirectory=python/x402

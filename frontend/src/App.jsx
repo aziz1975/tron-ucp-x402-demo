@@ -24,18 +24,14 @@ function AgentDemoModal({ isOpen, onClose }) {
       { msg: '[LLM] Agent initialized on port 8080.', delay: 500, icon: <Terminal className="w-4 h-4 text-gray-400" /> },
       { msg: '[LLM] Attempting to fetch Premium AI API (`GET /api/premium-data`)...', delay: 2000, icon: <Search className="w-4 h-4 text-blue-400" /> },
       { msg: '[LLM] Analyzing response... HTTP 402 Payment Required.', delay: 4500, icon: <ShieldCheck className="w-4 h-4 text-red-400" /> },
-      { msg: '[LLM] Browsing WWW-Authenticate header. Extracting UCP manifest URL.', delay: 7000, icon: <Search className="w-4 h-4 text-blue-400" /> },
-      { msg: 'Fetching Universal Commerce Protocol Manifest...', delay: 9000, icon: <CheckCircle className="w-4 h-4 text-emerald-400" /> },
-      { msg: '[LLM] Business profile parsed. Intent matched: dev.ucp.shopping.checkout on TRON.', delay: 12500, icon: <CheckCircle className="w-4 h-4 text-emerald-400" /> },
-      { msg: '[LLM] POST /ucp/v1/checkout-sessions for 15.00 USDT...', delay: 15500, icon: <Wallet className="w-4 h-4 text-amber-400" /> },
-      { msg: '🔒 Checkout suspended by Merchant API. Check your phone!', delay: 16500, icon: <ShieldCheck className="w-4 h-4 text-red-500" /> },
-      { msg: 'Awaiting human cryptographic approval via Telegram...', delay: 18000, icon: <RefreshCw className="w-4 h-4 text-gray-400 animate-spin" /> },
-      { msg: '🔓 2FA Hit Received! Checkout session updated with transfer instructions.', delay: 30000, icon: <CheckCircle className="w-4 h-4 text-emerald-400" /> },
-      { msg: '[LLM] Analyzing payload parameters... Target: TXYZopYRdj...', delay: 33000, icon: <Search className="w-4 h-4 text-blue-400" /> },
-      { msg: '[LLM] Formatting TRC20 15 USDT smart contract payload...', delay: 36000, icon: <Activity className="w-4 h-4 text-purple-400" /> },
-      { msg: 'Cryptographically signing & broadcasting to Nile Testnet...', delay: 38500, icon: <Terminal className="w-4 h-4 text-blue-400" /> },
-      { msg: 'Submitting blockchain receipt to POST /ucp/v1/checkout-sessions/:id/complete...', delay: 43000, icon: <Target className="w-4 h-4 text-blue-400" /> },
-      { msg: 'Receipt validated. Premium payload decrypted successfully.', delay: 45000, icon: <CheckCircle className="w-4 h-4 text-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.5)]" /> }
+      { msg: '[LLM] Decoding x402 payment requirements from the response body/header.', delay: 7000, icon: <Search className="w-4 h-4 text-blue-400" /> },
+      { msg: '[LLM] Selecting TRON Nile USDT settlement path.', delay: 9500, icon: <CheckCircle className="w-4 h-4 text-emerald-400" /> },
+      { msg: '[LLM] Preparing TIP-712 payment permit for 15.00 USDT...', delay: 12500, icon: <Wallet className="w-4 h-4 text-amber-400" /> },
+      { msg: '[LLM] Checking token allowance against the PaymentPermit contract.', delay: 16000, icon: <ShieldCheck className="w-4 h-4 text-red-500" /> },
+      { msg: 'Signing x402 permit with the local TRON agent wallet...', delay: 20500, icon: <Activity className="w-4 h-4 text-purple-400" /> },
+      { msg: 'Retrying GET /api/premium-data with PAYMENT-SIGNATURE header...', delay: 26000, icon: <Target className="w-4 h-4 text-blue-400" /> },
+      { msg: 'Facilitator verify + settle completed on TRON Nile.', delay: 34000, icon: <Terminal className="w-4 h-4 text-blue-400" /> },
+      { msg: 'PAYMENT-RESPONSE header received. Premium payload decrypted successfully.', delay: 39000, icon: <CheckCircle className="w-4 h-4 text-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.5)]" /> }
     ];
 
     let currentSteps = [];
@@ -133,16 +129,16 @@ function OverviewTab({ metrics }) {
         <div className="col-span-1 flex flex-col gap-4">
           <div className="bg-gradient-to-br from-indigo-600/10 to-transparent border border-indigo-500/20 rounded-xl p-5 shadow-sm text-indigo-400 w-full flex-1 relative overflow-hidden group">
             <h3 className="flex items-center gap-2 text-sm font-medium mb-2">
-              <Box className="w-4 h-4" /> UCP Universal Standard
+              <Box className="w-4 h-4" /> Bank of AI x402
             </h3>
             <p className="text-xs text-indigo-300/80 leading-relaxed mb-4">
-              Your gateway is fully mapped to the UCP specification. Agents can autonomously interpret intent and dispatch TRON tokens.
+              Your premium route now exposes an x402 challenge on TRON Nile. Agents can sign a payment permit and settle through the facilitator automatically.
             </p>
           </div>
           <div className="bg-[#18181b] border border-[#27272a] rounded-xl p-5 shadow-sm w-full flex-1">
-            <div className="text-sm font-medium text-[#a1a1aa] mb-2">UCP Conversion Rate</div>
+            <div className="text-sm font-medium text-[#a1a1aa] mb-2">x402 Conversion Rate</div>
             <div className="text-3xl font-semibold text-white">{metrics.successRate}</div>
-            <p className="text-xs text-[#71717a] mt-1">Checkouts that resulted in paid on-chain challenges.</p>
+            <p className="text-xs text-[#71717a] mt-1">Protected requests that completed x402 settlement successfully.</p>
           </div>
         </div>
       </div>
@@ -189,7 +185,7 @@ function BalancesTab({ metrics }) {
           </div>
           <div className="text-4xl font-bold text-[#fafafa] mb-4">$0.00 <span className="text-[#a1a1aa] text-xl font-normal">USDT</span></div>
           <p className="text-sm text-[#71717a] leading-relaxed">
-            Standard TRON transactions settle usually within 5-15 seconds. Currently all observed unconfirmed UCP challenges are awaiting agent payload broadcast.
+            Standard TRON x402 settlements usually clear within a few seconds. Pending entries typically mean the client has not retried with a signed payment permit yet.
           </p>
         </div>
       </div>
@@ -217,7 +213,7 @@ function DevelopersTab() {
               <div className="flex justify-between items-center py-3 border-b border-[#27272a]">
                 <div>
                   <div className="text-sm font-medium text-white">Publishable key</div>
-                  <div className="text-xs text-[#71717a] mt-0.5">Used by checkout forms and SDKs</div>
+                  <div className="text-xs text-[#71717a] mt-0.5">Used by x402-capable clients and SDKs</div>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="font-mono text-xs bg-[#27272a] text-[#e4e4e7] px-2 py-1 rounded">pk_test_ucpx8923485</span>
@@ -243,7 +239,7 @@ function DevelopersTab() {
             </div>
             <div className="p-5">
               <div className="text-sm font-medium text-[#fafafa] mb-1">No webhooks configured</div>
-              <p className="text-xs text-[#71717a] max-w-md">Listen to events on your UCP merchant backend directly dynamically without polling.</p>
+              <p className="text-xs text-[#71717a] max-w-md">Listen to payment and settlement events on your x402 merchant backend without polling.</p>
             </div>
           </div>
         </div>
@@ -252,10 +248,10 @@ function DevelopersTab() {
           <h3 className="text-sm font-medium text-white mb-4">Recent API Requests</h3>
           <div className="space-y-4">
             {[ 
-              { code: 200, url: 'POST /ucp/v1/checkout-sessions/chk_x/complete', time: '5m' },
-              { code: 201, url: 'POST /ucp/v1/checkout-sessions', time: '5m' },
-              { code: 200, url: 'GET /.well-known/ucp', time: '6m' },
-              { code: 400, url: 'POST /ucp/v1/checkout-sessions/chk_x/complete', time: '22m' },
+              { code: 200, url: 'GET /api/premium-data', time: '5m' },
+              { code: 402, url: 'GET /api/premium-data', time: '5m' },
+              { code: 200, url: 'GET /api/orders', time: '6m' },
+              { code: 500, url: 'GET /api/premium-data', time: '22m' },
             ].map((log, i) => (
               <div key={i} className="flex justify-between items-start text-xs font-mono border-b border-[#27272a] pb-3 last:border-0 last:pb-0">
                 <div>
@@ -335,7 +331,7 @@ function App() {
             <div className="w-8 h-8 rounded bg-gradient-to-br from-red-600 to-red-900 flex items-center justify-center border border-red-500/50 shadow-[0_0_15px_rgba(220,38,38,0.3)]">
               <span className="text-white font-bold text-lg leading-none mt-[-2px]">♦</span>
             </div>
-            <span className="font-semibold text-lg tracking-tight">TRON UCP Demo</span>
+            <span className="font-semibold text-lg tracking-tight">TRON x402 Demo</span>
           </div>
           
           <div className="hidden md:flex gap-1 bg-[#18181b] p-1 rounded-md border border-[#27272a]">

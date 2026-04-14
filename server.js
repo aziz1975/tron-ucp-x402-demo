@@ -6,6 +6,11 @@ const { exec } = require('child_process');
 const { TronWeb } = require('tronweb');
 const TelegramBot = require('node-telegram-bot-api');
 const db = require('./db');
+const {
+    PAYMENT_SIGNATURE_HEADER,
+    PAYMENT_RESPONSE_HEADER,
+    getX402Module
+} = require('./x402-utils');
 
 const app = express();
 app.use(cors());
@@ -30,6 +35,10 @@ const CATALOG = {
         currency: 'USDT'
     }
 };
+const X402_FACILITATOR_URL = process.env.FACILITATOR_URL || 'https://facilitator.bankofai.io';
+const X402_RESOURCE_PATH = '/api/premium-data';
+const X402_SERVICE_URL = process.env.X402_SERVICE_URL || 'http://localhost:8001';
+const X402_SERVICE_RESOURCE_PATH = process.env.X402_SERVICE_RESOURCE_PATH || '/premium-data';
 
 const tronWeb = new TronWeb({
     fullNode: 'https://nile.trongrid.io',
@@ -40,6 +49,87 @@ const tronWeb = new TronWeb({
 const getBaseUrl = (req) => `${req.protocol}://${req.get('host')}`;
 const getServiceBaseUrl = (req) => `${getBaseUrl(req)}/ucp/v1`;
 const formatBaseUnits = (amount) => (Number(amount) / TOKEN_MULTIPLIER).toFixed(TOKEN_DECIMALS);
+
+const buildX402OrderId = (paymentId) => `x402-${String(paymentId || Date.now()).replace(/^0x/, '')}`;
+
+const createX402PaidOrder = (paymentPayload, settleResponse) => db.createOrder({
+    id: buildX402OrderId(
+        paymentPayload
+        && paymentPayload.payload
+        && paymentPayload.payload.paymentPermit
+        && paymentPayload.payload.paymentPermit.meta
+        && paymentPayload.payload.paymentPermit.meta.paymentId
+    ),
+    items: [{
+        id: 'premium_data_access',
+        quantity: 1,
+        price: Number(formatBaseUnits(paymentPayload.accepted.amount))
+    }],
+    total_amount: Number(formatBaseUnits(paymentPayload.accepted.amount)),
+    amount_in_sun: Number(paymentPayload.accepted.amount),
+    currency: 'USDT',
+    status: 'PAID',
+    txHash: settleResponse.transaction || null,
+    buyer: paymentPayload.payload.paymentPermit.buyer || null,
+    payment_protocol: 'bankofai_x402',
+    scheme: paymentPayload.accepted.scheme,
+    network: paymentPayload.accepted.network,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+});
+
+const buildUpstreamX402Url = (req) => {
+    const upstreamUrl = new URL(X402_SERVICE_RESOURCE_PATH, X402_SERVICE_URL);
+    const queryIndex = req.originalUrl.indexOf('?');
+    if (queryIndex !== -1) {
+        upstreamUrl.search = req.originalUrl.slice(queryIndex);
+    }
+    return upstreamUrl.toString();
+};
+
+const copyProxyHeaders = (sourceHeaders, targetRes) => {
+    const hopByHopHeaders = new Set([
+        'connection',
+        'keep-alive',
+        'proxy-authenticate',
+        'proxy-authorization',
+        'te',
+        'trailer',
+        'transfer-encoding',
+        'upgrade'
+    ]);
+
+    sourceHeaders.forEach((value, key) => {
+        if (hopByHopHeaders.has(key.toLowerCase())) return;
+        targetRes.setHeader(key, value);
+    });
+};
+
+const recordX402Settlement = async (req, upstreamResponse) => {
+    const paymentSignature = req.get(PAYMENT_SIGNATURE_HEADER);
+    const paymentResponse = upstreamResponse.headers.get(PAYMENT_RESPONSE_HEADER);
+
+    if (!paymentSignature || !paymentResponse || upstreamResponse.status !== 200) return;
+
+    try {
+        const { decodePaymentPayload } = await getX402Module();
+        const paymentPayload = decodePaymentPayload(paymentSignature);
+        const settleResponse = decodePaymentPayload(paymentResponse);
+        const orderId = buildX402OrderId(
+            paymentPayload
+            && paymentPayload.payload
+            && paymentPayload.payload.paymentPermit
+            && paymentPayload.payload.paymentPermit.meta
+            && paymentPayload.payload.paymentPermit.meta.paymentId
+        );
+
+        if (db.getOrderById(orderId)) return;
+
+        createX402PaidOrder(paymentPayload, settleResponse);
+    } catch (error) {
+        console.error('[x402] Failed to persist settlement locally:', error.message);
+    }
+};
 
 const normalizeAddress = (address) => {
     if (!address) return null;
@@ -617,38 +707,35 @@ app.get('/api/orders', (req, res) => {
     res.json(orders);
 });
 
-app.get('/api/premium-data', (req, res) => {
-    const authHeader = req.headers.authorization;
+app.get('/api/premium-data', async (req, res) => {
+    try {
+        const upstreamHeaders = new Headers();
+        Object.entries(req.headers).forEach(([key, value]) => {
+            if (!value || key.toLowerCase() === 'host') return;
+            if (Array.isArray(value)) {
+                value.forEach((entry) => upstreamHeaders.append(key, entry));
+                return;
+            }
+            upstreamHeaders.set(key, value);
+        });
 
-    if (!authHeader || !authHeader.startsWith('UCP ')) {
-        const profileUrl = `${getBaseUrl(req)}/.well-known/ucp`;
-        res.setHeader('WWW-Authenticate', `UCP url="${profileUrl}"`);
-        return res.status(402).json({
-            error: 'Payment Required',
-            message: 'Premium AI Endpoint. Complete a UCP checkout session before retrying.',
-            ucp_profile: profileUrl,
-            checkout_service: `${getServiceBaseUrl(req)}/checkout-sessions`
+        const upstreamResponse = await fetch(buildUpstreamX402Url(req), {
+            method: 'GET',
+            headers: upstreamHeaders
+        });
+
+        await recordX402Settlement(req, upstreamResponse);
+        copyProxyHeaders(upstreamResponse.headers, res);
+
+        const payload = Buffer.from(await upstreamResponse.arrayBuffer());
+        return res.status(upstreamResponse.status).send(payload);
+    } catch (error) {
+        console.error('[x402] Premium resource proxy error:', error.message);
+        return res.status(502).json({
+            error: 'x402 middleware service unavailable.',
+            message: error.message
         });
     }
-
-    const receiptTxHash = authHeader.split(' ')[1];
-    const orders = db.getOrders();
-    const validOrder = orders.find((order) => order.txHash === receiptTxHash && order.status === 'PAID');
-
-    if (!validOrder) {
-        return res.status(403).json({ error: 'Forbidden', message: 'Invalid payment receipt.' });
-    }
-
-    return res.status(200).json({
-        success: true,
-        data: {
-            confidential_ai_model_weights: '0x8fa9b2...34df',
-            weather_forecast: '72F and sunny in Silicon Valley',
-            alpha_signals: ['LONG $TRX', 'SHORT $FIAT']
-        },
-        receipt_used: receiptTxHash,
-        checkout_session_id: validOrder.id
-    });
 });
 
 app.post('/api/demo/approve-2fa/:orderId', (req, res) => {
@@ -669,6 +756,9 @@ app.post('/api/demo/run-agent', (req, res) => {
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+    console.log(`Bank of AI x402 protected resource (proxied): http://localhost:${PORT}${X402_RESOURCE_PATH}`);
+    console.log(`Bank of AI x402 middleware service: ${X402_SERVICE_URL}${X402_SERVICE_RESOURCE_PATH}`);
+    console.log(`x402 facilitator: ${X402_FACILITATOR_URL}`);
     console.log(`UCP business profile: http://localhost:${PORT}/.well-known/ucp`);
     console.log(`UCP checkout REST base: http://localhost:${PORT}/ucp/v1`);
     console.log(`UCP Explorer at: http://localhost:${PORT}/ucp-explorer`);

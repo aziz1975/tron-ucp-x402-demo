@@ -613,5 +613,68 @@
     "createdAt": "2026-04-07T14:56:35.970Z",
     "updatedAt": "2026-04-07T14:56:57.017Z",
     "humanApprovedAt": "2026-04-07T14:56:44.935Z"
+  },
+  {
+    "id": "x402-1776118579949-501",
+    "items": [
+      {
+        "id": "premium_data_access",
+        "quantity": 1,
+        "price": 15
+      }
+    ],
+    "total_amount": 15,
+    "amount_in_sun": 15000000,
+    "currency": "USDT",
+    "status": "PAID",
+    "txHash": "5de13a9cbe66c2d6eb76d8e337383c71e93489d58b512cde6f2ed3e7096e7a6b",
+    "buyer": "TWtfUYRLfA4b61eJ3wwHmYcieV14rUTMCW",
+    "payment_protocol": "bankofai_x402",
+    "scheme": "exact_permit",
+    "network": "tron:nile",
+    "createdAt": "2026-04-13T22:16:20.263Z",
+    "updatedAt": "2026-04-13T22:16:56.651Z"
+  },
+  {
+    "id": "x402-387eb7c2c3e518ef39242ab62ac98035",
+    "items": [
+      {
+        "id": "premium_data_access",
+        "quantity": 1,
+        "price": 15
+      }
+    ],
+    "total_amount": 15,
+    "amount_in_sun": 15000000,
+    "currency": "USDT",
+    "status": "PAID",
+    "txHash": "8a6c98a21df1b6b8ad4c79971c1e4247ef3cbaae4c941dcb4288d865713b7dc6",
+    "buyer": "TWtfUYRLfA4b61eJ3wwHmYcieV14rUTMCW",
+    "payment_protocol": "bankofai_x402",
+    "scheme": "exact_permit",
+    "network": "tron:nile",
+    "createdAt": "2026-04-14T20:41:25.753Z",
+    "updatedAt": "2026-04-14T20:41:25.753Z"
+  },
+  {
+    "id": "x402-7366ceec7c7ef2fbcc95d4cb4413ee06",
+    "items": [
+      {
+        "id": "premium_data_access",
+        "quantity": 1,
+        "price": 15
+      }
+    ],
+    "total_amount": 15,
+    "amount_in_sun": 15000000,
+    "currency": "USDT",
+    "status": "PAID",
+    "txHash": "789b6ff8cab8e374e6fc546bb3e16aee2f2800e200d7f22c03880c731aa292cc",
+    "buyer": "TWtfUYRLfA4b61eJ3wwHmYcieV14rUTMCW",
+    "payment_protocol": "bankofai_x402",
+    "scheme": "exact_permit",
+    "network": "tron:nile",
+    "createdAt": "2026-04-14T20:52:55.286Z",
+    "updatedAt": "2026-04-14T20:52:55.286Z"
   }
 ]
