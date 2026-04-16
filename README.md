@@ -295,21 +295,6 @@ python3 -m py_compile x402_service.py
 cd frontend && npm run build && npm run lint
 ```
 
-## Files You Will Touch Most
-
-- `server.js`
-  Express server, UCP routes, x402 proxy, order recording, Telegram approval logic
-- `x402_service.py`
-  Bank of AI FastAPI middleware service for the premium route
-- `test-agent.js`
-  x402-capable demo client
-- `db.js`
-  JSON file storage
-- `orders.json`
-  local order history
-- `frontend/src/App.jsx`
-  dashboard UI
-
 ## Troubleshooting
 
 ### `curl http://localhost:8001/premium-data` does not return `402`
@@ -354,21 +339,10 @@ Check:
 - `TELEGRAM_CHAT_ID`
 - your bot has received `/start`
 
-### I want to test without Telegram
-
-Leave Telegram env vars unset and use:
-
 ```bash
 curl -X POST http://localhost:8000/api/demo/approve-2fa/<checkout_session_id>
 ```
 
-## Current Architecture Notes
-
-- The premium x402 route is middleware-driven.
-- The Express server no longer hand-builds x402 `402` responses.
-- The dashboard reads local order data from `orders.json`.
-- Telegram 2FA currently applies only to the UCP checkout session path.
-
 ## License
 
-ISC
+MIT
