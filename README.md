@@ -26,7 +26,7 @@ Important behavior:
 ## Requirements
 
 - Node.js `22+`
-- npm `9+`
+- npm `10+`
 - Python `3.10+`
 - A TRON Nile wallet for `MERCHANT_ADDRESS`
 - A TRON Nile test wallet private key for `TRON_PRIVATE_KEY`
