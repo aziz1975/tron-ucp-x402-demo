@@ -676,5 +676,55 @@
     "network": "tron:nile",
     "createdAt": "2026-04-14T20:52:55.286Z",
     "updatedAt": "2026-04-14T20:52:55.286Z"
+  },
+  {
+    "id": "chk_1776211048752_567",
+    "merchant_order_id": "ord_chk_1776211048752_567",
+    "payment_instrument_id": "pi_chk_1776211048752_567",
+    "buyer": null,
+    "line_items": [
+      {
+        "id": "li_1",
+        "item": {
+          "id": "premium_data_access",
+          "title": "Premium AI Data Access",
+          "price": 15000000,
+          "currency": "USDT"
+        },
+        "quantity": 1,
+        "totals": [
+          {
+            "type": "subtotal",
+            "amount": 15000000,
+            "currency": "USDT"
+          },
+          {
+            "type": "total",
+            "amount": 15000000,
+            "currency": "USDT"
+          }
+        ]
+      }
+    ],
+    "totals": [
+      {
+        "type": "subtotal",
+        "amount": 15000000,
+        "currency": "USDT"
+      },
+      {
+        "type": "total",
+        "amount": 15000000,
+        "currency": "USDT"
+      }
+    ],
+    "currency": "USDT",
+    "total_amount": "15.000000",
+    "amount_in_base_units": 15000000,
+    "status": "PENDING",
+    "txHash": null,
+    "createdAt": "2026-04-14T23:57:28.751Z",
+    "updatedAt": "2026-04-14T23:57:35.813Z",
+    "humanApprovedAt": "2026-04-14T23:57:35.813Z"
   }
 ]
